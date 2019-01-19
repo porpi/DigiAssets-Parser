@@ -21,8 +21,17 @@ module.exports = function (sequelize, DataTypes) {
     size: {
       type: DataTypes.INTEGER
     },
+    strippedsize: {
+      type: DataTypes.INTEGER
+    },
+    weight: {
+      type: DataTypes.INTEGER
+    },
     version: {
       type: DataTypes.INTEGER
+    },
+    versionHex: {
+      type: DataTypes.STRING
     },
     merkleroot: {
       type: DataTypes.STRING
@@ -44,6 +53,18 @@ module.exports = function (sequelize, DataTypes) {
     },
     chainwork: {
       type: DataTypes.STRING
+    },
+    pow_algo_id: {
+      type: DataTypes.INTEGER
+    },
+    pow_algo: {
+      type: DataTypes.STRING
+    },
+    pow_hash: {
+      type: DataTypes.STRING
+    },
+    nTx: {
+      type: DataTypes.INTEGER
     },
     reward: {
       type: DataTypes.BIGINT

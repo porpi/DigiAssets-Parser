@@ -10,6 +10,9 @@ module.exports = function (sequelize, DataTypes) {
     blockhash: {
       type: ColoredCoinsDataTypes.HASH
     },
+    hash: {
+      type: ColoredCoinsDataTypes.HASH
+    },
     blocktime: {
       type: DataTypes.BIGINT
     },
@@ -24,6 +27,12 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.TEXT
     },
     size: {
+      type: DataTypes.INTEGER
+    },
+    vsize: {
+      type: DataTypes.INTEGER
+    },
+    weight: {
       type: DataTypes.INTEGER
     },
     version: {
