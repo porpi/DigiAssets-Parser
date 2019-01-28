@@ -1,6 +1,6 @@
 # DigiAssets Block Parser
 
-Connects to DigiByted (Json RPC) and parse the blockchain into mongodb including DigiAssets asset data, utxo's for address and much more.
+Connects to DigiByted (Json RPC) and parse the blockchain into PostgreSQL including DigiAssets asset data, utxo's for address and much more.
 
 ### Installation
 
