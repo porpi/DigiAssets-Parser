@@ -1,6 +1,6 @@
 'use strict'
 
-var ColoredCoinsDataTypes = require('./coloredCoinsDataTypes')
+var DigiAssetDataTypes = require('./digiAssetDataTypes')
 
 module.exports = function (sequelize, DataTypes) {
   var AddressesOutputs = sequelize.define('addressesoutputs', {
@@ -9,7 +9,7 @@ module.exports = function (sequelize, DataTypes) {
       primaryKey: true
     },
     address: {
-      type: ColoredCoinsDataTypes.ADDRESS,
+      type: DigiAssetDataTypes.ADDRESS,
       primaryKey: true
     }
   },

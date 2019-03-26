@@ -1,6 +1,6 @@
 'use strict'
 
-var ColoredCoinsDataTypes = require('./coloredCoinsDataTypes')
+var DigiAssetDataTypes = require('./digiAssetDataTypes')
 
 module.exports = function (sequelize, DataTypes) {
   var Transactions = sequelize.define('transactions', {
@@ -8,10 +8,10 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.INTEGER
     },
     blockhash: {
-      type: ColoredCoinsDataTypes.HASH
+      type: DigiAssetDataTypes.HASH
     },
     hash: {
-      type: ColoredCoinsDataTypes.HASH
+      type: DigiAssetDataTypes.HASH
     },
     blocktime: {
       type: DataTypes.BIGINT
@@ -20,7 +20,7 @@ module.exports = function (sequelize, DataTypes) {
       type: 'SMALLINT'
     },
     txid: {
-      type: ColoredCoinsDataTypes.HASH,
+      type: DigiAssetDataTypes.HASH,
       primaryKey: true
     },
     hex: {
@@ -53,7 +53,7 @@ module.exports = function (sequelize, DataTypes) {
     overflow: {
       type: DataTypes.BOOLEAN
     },
-    ccdata: {
+    dadata: {
       type: DataTypes.JSONB
     },
     colored: {
@@ -64,7 +64,7 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    ccparsed: {
+    daparsed: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
@@ -108,7 +108,7 @@ module.exports = function (sequelize, DataTypes) {
         fields: ['colored']
       },
       {
-        fields: ['ccparsed']
+        fields: ['daparsed']
       },
       {
         fields: ['blockheight', 'iosparsed']
@@ -117,7 +117,7 @@ module.exports = function (sequelize, DataTypes) {
         fields: ['blockheight', 'colored']
       },
       {
-        fields: ['blockheight', 'colored', 'ccparsed']
+        fields: ['blockheight', 'colored', 'daparsed']
       },
       {
         fields: ['blockheight', 'index_in_block']

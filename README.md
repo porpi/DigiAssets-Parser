@@ -5,7 +5,7 @@ Connects to DigiByted (Json RPC) and parse the blockchain into PostgreSQL includ
 ### Installation
 
 ```sh
-$ npm i cc-block-parser
+$ npm i digiasset-block-parser
 ```
 
 

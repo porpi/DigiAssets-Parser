@@ -1,6 +1,6 @@
 'use strict'
 
-var ColoredCoinsDataTypes = require('./coloredCoinsDataTypes')
+var DigiAssetDataTypes = require('./digiAssetDataTypes')
 
 module.exports = function (sequelize, DataTypes) {
   var Blocks = sequelize.define('blocks', {
@@ -9,14 +9,14 @@ module.exports = function (sequelize, DataTypes) {
       primaryKey: true
     },
     hash: {
-      type: ColoredCoinsDataTypes.HASH,
+      type: DigiAssetDataTypes.HASH,
       unique: true
     },
     previousblockhash: {
-      type: ColoredCoinsDataTypes.HASH
+      type: DigiAssetDataTypes.HASH
     },
     nextblockhash: {
-      type: ColoredCoinsDataTypes.HASH
+      type: DigiAssetDataTypes.HASH
     },
     size: {
       type: DataTypes.INTEGER
@@ -86,7 +86,7 @@ module.exports = function (sequelize, DataTypes) {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    ccparsed: {
+    daparsed: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     }
@@ -111,7 +111,7 @@ module.exports = function (sequelize, DataTypes) {
         fields: ['txsparsed']
       },
       {
-        fields: ['ccparsed']
+        fields: ['daparsed']
       },
       {
         fields: [{attribute: 'height', order: 'DESC'}, 'txsinserted']
@@ -120,7 +120,7 @@ module.exports = function (sequelize, DataTypes) {
         fields: ['height', 'txsinserted', 'txsparsed']
       },
       {
-        fields: ['height', 'ccparsed']
+        fields: ['height', 'daparsed']
       }
     ],
     timestamps: false

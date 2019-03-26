@@ -1,11 +1,11 @@
 'use strict'
 
-var ColoredCoinsDataTypes = require('./coloredCoinsDataTypes')
+var DigiAssetDataTypes = require('./digiAssetDataTypes')
 
 module.exports = function (sequelize, DataTypes) {
   var Inputs = sequelize.define('inputs', {
     input_txid: {
-      type: ColoredCoinsDataTypes.HASH,
+      type: DigiAssetDataTypes.HASH,
       primaryKey: true
     },
     input_index: {
@@ -13,7 +13,7 @@ module.exports = function (sequelize, DataTypes) {
       primaryKey: true
     },
     txid: {
-      type: ColoredCoinsDataTypes.HASH // might be null (coinbase) ; might be not unique (mempool)
+      type: DigiAssetDataTypes.HASH // might be null (coinbase) ; might be not unique (mempool)
     },
     vout: {
       type: 'SMALLINT' // might be null (coinbase) ; might be not unique (mempool)

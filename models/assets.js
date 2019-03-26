@@ -1,11 +1,11 @@
 'use strict'
 
-var ColoredCoinsDataTypes = require('./coloredCoinsDataTypes')
+var DigiAssetDataTypes = require('./digiAssetDataTypes')
 
 module.exports = function (sequelize, DataTypes) {
   var Assets = sequelize.define('assets', {
     assetId: {
-      type: ColoredCoinsDataTypes.ASSETID,
+      type: DigiAssetDataTypes.ASSETID,
       primaryKey: true
     },
     divisibility: {

@@ -2,7 +2,7 @@ var async = require('async')
 var util = require('util')
 var events = require('events')
 var _ = require('lodash')
-var CCTransaction = require('digiasset-transaction')
+var DATransaction = require('digiasset-transaction')
 var bitcoin = require('bitcoin-async')
 var get_assets_outputs = require('digiasset-get-assets-outputs')
 var squel = require('squel')
@@ -46,8 +46,8 @@ function Scanner (settings, db) {
     self.on('newtransaction', function (newtransaction) {
       process.send({to: properties.roles.API, newtransaction: newtransaction})
     })
-    self.on('newcctransaction', function (newcctransaction) {
-      process.send({to: properties.roles.API, newcctransaction: newcctransaction})
+    self.on('newdatransaction', function (newdatransaction) {
+      process.send({to: properties.roles.API, newdatransaction: newdatransaction})
     })
     self.on('revertedblock', function (revertedblock) {
       process.send({to: properties.roles.API, revertedblock: revertedblock})
@@ -55,8 +55,8 @@ function Scanner (settings, db) {
     self.on('revertedtransaction', function (revertedtransaction) {
       process.send({to: properties.roles.API, revertedtransaction: revertedtransaction})
     })
-    self.on('revertedcctransaction', function (revertedcctransaction) {
-      process.send({to: properties.roles.API, revertedcctransaction: revertedcctransaction})
+    self.on('reverteddatransaction', function (reverteddatransaction) {
+      process.send({to: properties.roles.API, reverteddactransaction: reverteddatransaction})
     })
     self.on('mempool', function () {
       process.send({to: properties.roles.API, mempool: true})
@@ -190,7 +190,7 @@ Scanner.prototype.revert_block = function (block_height, callback) {
               self.emit('revertedtransaction', {txid: txid})
             })
             colored_txids.forEach(function (txid) {
-              self.emit('revertedcctransaction', {txid: txid})
+              self.emit('reverteddatransaction', {txid: txid})
             })
             self.fix_mempool(function (err) {
               if (err) return callback(err)
@@ -224,7 +224,7 @@ var revert_transactions_flags = function (txids, sql_query) {
   sql_query.unshift(squel.update()
     .table('transactions')
     .set('iosparsed', false)
-    .set('ccparsed', false)
+    .set('daparsed', false)
     .where('txid IN ?', txids)
     .toString())
   sql_query.unshift(squel.update()
@@ -238,7 +238,7 @@ Scanner.prototype.fix_mempool = function (callback) {
   var fix_mempool_query = squel.update()
     .table('transactions')
     .set('iosparsed', false)
-    .set('ccparsed', false)
+    .set('daparsed', false)
     .where('blockheight = -1')
     .toString()
   this.sequelize.query(fix_mempool_query).then(function () { callback() }).catch(callback)
@@ -427,7 +427,7 @@ Scanner.prototype.parse_new_block = function (raw_block_data, callback) {
   raw_block_data.time = raw_block_data.time * 1000
   raw_block_data.txsparsed = false
   raw_block_data.txsinserted = false
-  raw_block_data.ccparsed = false
+  raw_block_data.daparsed = false
   raw_block_data.reward = calc_block_reward(raw_block_data.height)
   raw_block_data.totalsent = 0
   raw_block_data.fees = 0
@@ -511,7 +511,7 @@ var get_opreturn_data = function (asm) {
 
 var check_version = function (hex) {
   var version = hex.toString('hex').substring(0, 4)
-  return (version.toLowerCase() === '4343')
+  return (version.toLowerCase() === '4441')
 }
 
 Scanner.prototype.parse_new_transaction = function (raw_transaction_data, block_height, sql_query) {
@@ -531,7 +531,7 @@ Scanner.prototype.parse_new_transaction = function (raw_transaction_data, block_
   var out = self.parse_vout(raw_transaction_data, block_height, sql_query)
 
   raw_transaction_data.iosparsed = false
-  raw_transaction_data.ccparsed = false
+  raw_transaction_data.daparsed = false
   var update = {
     blocktime: raw_transaction_data.blocktime,
     blockheight: raw_transaction_data.blockheight,
@@ -582,7 +582,7 @@ Scanner.prototype.parse_vout = function (raw_transaction_data, block_height, sql
   var out = 0
   var addresses = []
   if (!raw_transaction_data.vout) return 0
-  raw_transaction_data.ccdata = raw_transaction_data.ccdata || []
+  raw_transaction_data.dadata = raw_transaction_data.dadata || []
   raw_transaction_data.vout.forEach(function (vout) {
     if (vout.scriptPubKey.hex.length > 2000) {
       vout.scriptPubKey.hex = null
@@ -591,12 +591,12 @@ Scanner.prototype.parse_vout = function (raw_transaction_data, block_height, sql
       var hex = get_opreturn_data(vout.scriptPubKey.asm)
       if (check_version(hex)) {
         try {
-          var cc = CCTransaction.fromHex(hex).toJson()
+          var da = DATransaction.fromHex(hex).toJson()
         } catch (e) {
-          console.log('Invalid CC transaction.')
+          console.log('Invalid DA transaction.')
         }
-        if (cc) {
-          raw_transaction_data.ccdata.push(cc)
+        if (da) {
+          raw_transaction_data.dadata.push(da)
           raw_transaction_data.colored = true
         }
       }
@@ -693,7 +693,7 @@ Scanner.prototype.fix_blocks = function (err, callback) {
       }
       var update = {
         txsparsed: true,
-        ccparsed: false
+        daparsed: false
       }
       var conditions = {
         height: {$between: [first_block, last_block]}
@@ -841,19 +841,19 @@ var get_fix_transactions_update_query = function (bulk_outputs_ids, bulk_inputs,
   return ans
 }
 
-Scanner.prototype.parse_cc = function (err, callback) {
+Scanner.prototype.parse_da = function (err, callback) {
   var self = this
   if (err) {
-    console.error('parse_cc: err = ', err)
-    return self.parse_cc()
+    console.error('parse_da: err = ', err)
+    return self.parse_da()
   }
   var emits = []
   callback = callback || function (err) {
-    self.parse_cc(err)
+    self.parse_da(err)
   }
 
-  self.get_next_block_to_cc_parse(500, function (err, raw_block_datas) {
-    if (err) return self.parse_cc(err)
+  self.get_next_block_to_da_parse(500, function (err, raw_block_datas) {
+    if (err) return self.parse_da(err)
     if (!raw_block_datas || !raw_block_datas.length) {
       return setTimeout(function () {
         callback()
@@ -865,7 +865,7 @@ Scanner.prototype.parse_cc = function (err, callback) {
 
     var did_work = false
     var close_blocks = function (err, empty) {
-      if (debug) console.timeEnd('parse_cc_bulks')
+      if (debug) console.timeEnd('parse_da_bulks')
       if (err) return callback(err)
       emits.forEach(function (emit) {
         self.emit(emit[0], emit[1])
@@ -894,9 +894,9 @@ Scanner.prototype.parse_cc = function (err, callback) {
           callback()
         }, 500)
       }
-      console.log('parse_cc: close_blocks ' + blocks_heights[0] + '-' + blocks_heights[blocks_heights.length - 1])
+      console.log('parse_da: close_blocks ' + blocks_heights[0] + '-' + blocks_heights[blocks_heights.length - 1])
       var update = {
-        ccparsed: true
+        daparsed: true
       }
       var conditions = {
         height: {$in: blocks_heights}
@@ -907,38 +907,38 @@ Scanner.prototype.parse_cc = function (err, callback) {
           where: conditions
         }
       ).then(function (res) {
-        console.log('parse_cc - close_blocks - success')
+        console.log('parse_da - close_blocks - success')
         callback()
       }).catch(function (e) {
-        console.log('parse_cc - close_blocks - e = ', e)
+        console.log('parse_da - close_blocks - e = ', e)
         callback(e)
       })
     }
 
-    self.get_need_to_cc_parse_transactions_by_blocks(first_block, last_block, function (err, transactions_data) {
-      if (err) return self.parse_cc(err)
-      console.log('Parsing cc for blocks ' + first_block + '-' + last_block + ' (' + transactions_data.length + ' txs).')
+    self.get_need_to_da_parse_transactions_by_blocks(first_block, last_block, function (err, transactions_data) {
+      if (err) return self.parse_da(err)
+      console.log('Parsing da for blocks ' + first_block + '-' + last_block + ' (' + transactions_data.length + ' txs).')
       if (!transactions_data) return callback('can\'t get transactions from db')
       if (!transactions_data.length) {
-        if (debug) console.time('parse_cc_bulks')
+        if (debug) console.time('parse_da_bulks')
         return close_blocks(null, true)
       }
 
       async.each(transactions_data, function (transaction_data, cb) {
         var sql_query = []
-        self.parse_cc_tx(transaction_data, sql_query)
+        self.parse_da_tx(transaction_data, sql_query)
         if (!transaction_data.iosparsed) {
           return cb()
         }
         did_work = true
         sql_query.push(squel.update()
           .table('transactions')
-          .set('ccparsed', true)
+          .set('daparsed', true)
           .set('overflow', transaction_data.overflow || false)
           .where('iosparsed AND txid = ?', transaction_data.txid)
           .toString())
         sql_query = sql_query.join(';\n')
-        emits.push(['newcctransaction', transaction_data])
+        emits.push(['newdatransaction', transaction_data])
         emits.push(['newtransaction', transaction_data])
         self.sequelize.transaction(function (sql_transaction) {
           return self.sequelize.query(sql_query, {transaction: sql_transaction})
@@ -950,8 +950,8 @@ Scanner.prototype.parse_cc = function (err, callback) {
   })
 }
 
-Scanner.prototype.parse_cc_tx = function (transaction_data, sql_query) {
-  if (!transaction_data.iosparsed || !transaction_data.ccdata || !transaction_data.ccdata.length) {
+Scanner.prototype.parse_da_tx = function (transaction_data, sql_query) {
+  if (!transaction_data.iosparsed || !transaction_data.dadata || !transaction_data.dadata.length) {
     // console.warn('parse_cc_tx, problem: ', JSON.stringify(transaction_data))
     return
   }
@@ -962,8 +962,8 @@ Scanner.prototype.parse_cc_tx = function (transaction_data, sql_query) {
     transaction_data.vout[out_index].assets = assetsArray
     assetsArray.forEach(function (asset, index_in_output) {
       var type = null
-      if (transaction_data.ccdata && transaction_data.ccdata.length && transaction_data.ccdata[0].type) {
-        type = transaction_data.ccdata[0].type
+      if (transaction_data.dadata && transaction_data.dadata.length && transaction_data.dadata[0].type) {
+        type = transaction_data.dadata[0].type
       }
       if (type === 'issuance') {
         sql_query.push(squel.insert()
@@ -1002,11 +1002,11 @@ Scanner.prototype.parse_cc_tx = function (transaction_data, sql_query) {
   })
 }
 
-Scanner.prototype.get_need_to_cc_parse_transactions_by_blocks = function (first_block, last_block, callback) {
-  console.log('get_need_to_cc_parse_transactions_by_blocks for blocks ' + first_block + '-' + last_block)
+Scanner.prototype.get_need_to_da_parse_transactions_by_blocks = function (first_block, last_block, callback) {
+  console.log('get_need_to_da_parse_transactions_by_blocks for blocks ' + first_block + '-' + last_block)
   var query = get_find_transaction_query(this,
     'WHERE\n' +
-    '  ccparsed = FALSE AND\n' +
+    '  daparsed = FALSE AND\n' +
     '  colored = TRUE AND\n' +
     '  blockheight BETWEEN ' + first_block + ' AND ' + last_block + '\n' +
     'ORDER BY\n' +
@@ -1015,11 +1015,11 @@ Scanner.prototype.get_need_to_cc_parse_transactions_by_blocks = function (first_
     'LIMIT 1000;')
   this.sequelize.query(query, {type: this.sequelize.QueryTypes.SELECT})
     .then(function (transactions) {
-      console.log('get_need_to_cc_parse_transactions_by_blocks - transactions.length = ', transactions.length)
+      console.log('get_need_to_da_parse_transactions_by_blocks - transactions.length = ', transactions.length)
       callback(null, transactions)
     })
     .catch(function (e) {
-      console.log('get_need_to_cc_parse_transactions_by_blocks - e = ', e)
+      console.log('get_need_to_da_parse_transactions_by_blocks - e = ', e)
       callback(e)
     })
 }
@@ -1144,7 +1144,7 @@ Scanner.prototype.fix_vin = function (raw_transaction_data, blockheight, bulk_ou
       '    AS assets)) AS assets\n' +
       'FROM outputs\n' +
       'JOIN transactions ON transactions.txid = outputs.txid\n' +
-      'WHERE ((transactions.colored = FALSE) OR (transactions.colored = TRUE AND transactions.iosparsed = TRUE AND transactions.ccparsed = TRUE)) AND ' + outputs_conditions + ';'
+      'WHERE ((transactions.colored = FALSE) OR (transactions.colored = TRUE AND transactions.iosparsed = TRUE AND transactions.daparsed = TRUE)) AND ' + outputs_conditions + ';'
   } else {
     find_vin_transactions_query = '' +
       'SELECT\n' +
@@ -1211,9 +1211,9 @@ var set_last_fully_parsed_block = function (last_fully_parsed_block) {
   process.send({to: properties.roles.API, last_fully_parsed_block: last_fully_parsed_block})
 }
 
-Scanner.prototype.get_next_block_to_cc_parse = function (limit, callback) {
+Scanner.prototype.get_next_block_to_da_parse = function (limit, callback) {
   var conditions = {
-    ccparsed: false
+    daparsed: false
   }
   var attributes = [
     'height',
@@ -1228,7 +1228,7 @@ Scanner.prototype.get_next_block_to_cc_parse = function (limit, callback) {
   this.Blocks.findAll({where: conditions, attributes: attributes, order: [['height', 'ASC']], limit: limit, raw: true})
     .then(function (blocks) { callback(null, blocks) })
     .catch(function (e) {
-      console.error('get_next_block_to_cc_parse: e = ', e)
+      console.error('get_next_block_to_da_parse: e = ', e)
       callback(e)
     })
 }
@@ -1282,7 +1282,7 @@ Scanner.prototype.parse_new_mempool_transaction = function (raw_transaction_data
       self.parse_vin(raw_transaction_data, blockheight, sql_query)
       self.parse_vout(raw_transaction_data, blockheight, sql_query)
       raw_transaction_data.iosparsed = false
-      raw_transaction_data.ccparsed = false
+      raw_transaction_data.daparsed = false
       cb()
     },
     function (cb) {
@@ -1306,26 +1306,26 @@ Scanner.prototype.parse_new_mempool_transaction = function (raw_transaction_data
       }
     },
     function (cb) {
-      if (raw_transaction_data.ccparsed) {
+      if (raw_transaction_data.daparsed) {
         // console.log('parse_new_mempool_transaction - #4.1 raw_transaction_data.ccparsed = true, txid = ', raw_transaction_data.txid)
         cb(null, null)
       } else {
-        if (raw_transaction_data.iosparsed && raw_transaction_data.colored && !raw_transaction_data.ccparsed) {
+        if (raw_transaction_data.iosparsed && raw_transaction_data.colored && !raw_transaction_data.daparsed) {
           // console.log('parse_new_mempool_transaction - #4.2 parse_cc_tx, txid = ', raw_transaction_data.txid)
-          self.parse_cc_tx(raw_transaction_data, sql_query)
-          raw_transaction_data.ccparsed = true
+          self.parse_da_tx(raw_transaction_data, sql_query)
+          raw_transaction_data.daparsed = true
           did_work = true
         }
         if (did_work && raw_transaction_data.iosparsed) {
           emits.push(['newtransaction', raw_transaction_data])
           if (raw_transaction_data.colored) {
-            emits.push(['newcctransaction', raw_transaction_data])
+            emits.push(['newdatransaction', raw_transaction_data])
           }
         }
         if (did_work) {
           var update = {
             iosparsed: raw_transaction_data.iosparsed,
-            ccparsed: raw_transaction_data.ccparsed,
+            daparsed: raw_transaction_data.daparsed,
             tries: raw_transaction_data.tries || 0
           }
           if (raw_transaction_data.fee) update.fee = raw_transaction_data.fee
@@ -1342,7 +1342,7 @@ Scanner.prototype.parse_new_mempool_transaction = function (raw_transaction_data
   ],
   function (err) {
     if (err) return callback(err)
-    callback(null, did_work, raw_transaction_data.iosparsed, raw_transaction_data.colored, raw_transaction_data.ccparsed)
+    callback(null, did_work, raw_transaction_data.iosparsed, raw_transaction_data.colored, raw_transaction_data.daparsed)
   })
 }
 
@@ -1372,14 +1372,14 @@ Scanner.prototype.parse_mempool_cargo = function (txids, callback) {
     }
     raw_transaction_data = to_discrete(raw_transaction_data)
     // console.time('parse_new_mempool_transaction time - ' + raw_transaction_data.txid)
-    self.parse_new_mempool_transaction(raw_transaction_data, sql_query, emits, function (err, did_work, iosparsed, colored, ccparsed) {
+    self.parse_new_mempool_transaction(raw_transaction_data, sql_query, emits, function (err, did_work, iosparsed, colored, daparsed) {
       if (err) return cb(err)
       // work may have been done in priority_parse in context of API
       new_mempool_txs.push({
         txid: raw_transaction_data.txid,
         iosparsed: iosparsed,
         colored: colored,
-        ccparsed: ccparsed
+        daparsed: daparsed
       })
       if (!did_work) {
         return cb()
@@ -1414,7 +1414,7 @@ Scanner.prototype.parse_mempool_cargo = function (txids, callback) {
             found = true
             self_mempool_tx.iosparsed = mempool_tx.iosparsed
             self_mempool_tx.colored = mempool_tx.colored
-            self_mempool_tx.ccparsed = mempool_tx.ccparsed
+            self_mempool_tx.daparsed = mempool_tx.daparsed
           }
         })
         if (!found) {
@@ -1422,7 +1422,7 @@ Scanner.prototype.parse_mempool_cargo = function (txids, callback) {
             txid: mempool_tx.txid,
             iosparsed: mempool_tx.iosparsed,
             colored: mempool_tx.colored,
-            ccparsed: mempool_tx.ccparsed
+            daparsed: mempool_tx.daparsed
           })
         }
       })
@@ -1486,7 +1486,7 @@ Scanner.prototype.revert_txids = function (callback) {
               self.emit('revertedtransaction', {txid: txid})
             })
             colored_txids.forEach(function (txid) {
-              self.emit('revertedcctransaction', {txid: txid})
+              self.emit('reverteddatransaction', {txid: txid})
             })
             self.to_revert = []
             callback()
@@ -1520,7 +1520,7 @@ Scanner.prototype.parse_new_mempool = function (callback) {
         var conditions = {
           blockheight: -1
         }
-        var attributes = ['txid', 'iosparsed', 'colored', 'ccparsed']
+        var attributes = ['txid', 'iosparsed', 'colored', 'daparsed']
         var limit = 10000
         var has_next = true
         var offset = 0
@@ -1539,7 +1539,7 @@ Scanner.prototype.parse_new_mempool = function (callback) {
               console.time('processing mempool db txs')
               self.mempool_txs = self.mempool_txs.concat(transactions)
               transactions.forEach(function (transaction) {
-                if (transaction.iosparsed && transaction.colored === transaction.ccparsed) {
+                if (transaction.iosparsed && transaction.colored === transaction.daparsed) {
                   db_parsed_txids.push(transaction.txid)
                 } else {
                   db_unparsed_txids.push(transaction.txid)
@@ -1559,7 +1559,7 @@ Scanner.prototype.parse_new_mempool = function (callback) {
       } else {
         console.log('getting mempool from memory cache')
         self.mempool_txs.forEach(function (transaction) {
-          if (transaction.iosparsed && transaction.colored === transaction.ccparsed) {
+          if (transaction.iosparsed && transaction.colored === transaction.daparsed) {
             db_parsed_txids.push(transaction.txid)
           } else {
             db_unparsed_txids.push(transaction.txid)
@@ -1569,12 +1569,12 @@ Scanner.prototype.parse_new_mempool = function (callback) {
       }
     },
     function (cb) {
-      console.log('start find mempool bitcoind txs')
+      console.log('start find mempool digibyted txs')
       bitcoin_rpc.cmd('getrawmempool', [], cb)
     },
     function (whole_txids, cb) {
       whole_txids = whole_txids || []
-      console.log('end find mempool bitcoind txs')
+      console.log('end find mempool digibyted txs')
       console.log('parsing mempool txs (' + whole_txids.length + ')')
       console.log('start xoring')
       // console.log('db_parsed_txids = ', db_parsed_txids.map(function (txid) { return txid }))
@@ -1633,7 +1633,7 @@ Scanner.prototype.wait_for_parse = function (txid, callback) {
   var conditions = {
     txid: txid,
     iosparsed: true,
-    ccparsed: {$col: 'colored'}
+    daparsed: {$col: 'colored'}
   }
   var attributes = ['txid']
   self.Transactions.findOne({ where: conditions, attributes: attributes, raw: true })
@@ -1670,7 +1670,7 @@ Scanner.prototype.priority_parse = function (txid, callback) {
       var conditions = {
         txid: txid,
         iosparsed: true,
-        ccparsed: {$col: 'colored'}
+        daparsed: {$col: 'colored'}
       }
       var attributes = ['txid']
       self.Transactions.findOne({ where: conditions, attributes: attributes, raw: true })
@@ -1680,14 +1680,14 @@ Scanner.prototype.priority_parse = function (txid, callback) {
     function (tx, cb) {
       console.timeEnd('priority_parse: find in db ' + txid)
       if (tx) return cb(PARSED)
-      console.time('priority_parse: get_from_bitcoind ' + txid)
+      console.time('priority_parse: get_from_digibyted ' + txid)
       bitcoin_rpc.cmd('getrawtransaction', [txid, 1], function (err, raw_transaction_data) {
         if (err && err.code === -5) return cb(['tx ' + txid + ' not found.', 204])
         cb(err, raw_transaction_data)
       })
     },
     function (raw_transaction_data, cb) {
-      console.timeEnd('priority_parse: get_from_bitcoind ' + txid)
+      console.timeEnd('priority_parse: get_from_digibyted ' + txid)
       console.time('priority_parse: parse inputs ' + txid)
       transaction = raw_transaction_data
       transaction = to_discrete(transaction)
@@ -1716,7 +1716,7 @@ Scanner.prototype.priority_parse = function (txid, callback) {
 }
 
 Scanner.prototype.get_info = function (callback) {
-  bitcoin_rpc.cmd('getinfo', [], callback)
+  bitcoin_rpc.cmd('getblockchaininfo', [], callback)
 }
 
 var is_coinbase = function (tx_data) {
