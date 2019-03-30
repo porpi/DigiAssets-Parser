@@ -24,6 +24,9 @@ module.exports = function (sequelize, DataTypes) {
     scriptSig: {
       type: DataTypes.JSONB  // to contain hex, asm
     },
+    txinwitness: {
+      type: DataTypes.JSONB
+    },
     coinbase: {
       type: DataTypes.STRING
     },
