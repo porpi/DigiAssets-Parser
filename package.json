@@ -1,6 +1,6 @@
 {
   "name": "digiasset-block-parser",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Parse the blockchain and build a DigiAsset",
   "main": "scanner.js",
   "scripts": {
