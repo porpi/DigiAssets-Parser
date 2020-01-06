@@ -23,6 +23,9 @@ module.exports = function (sequelize, DataTypes) {
     issueTxid: {
       type: DigiAssetDataTypes.HASH,
       allowNull: false
+    },
+    type: {
+      type: DigiAssetDataTypes.ASSET_TXN_TYPE
     }
   },
   {
