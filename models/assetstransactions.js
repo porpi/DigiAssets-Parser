@@ -13,7 +13,7 @@ module.exports = function (sequelize, DataTypes) {
       primaryKey: true
     },
     type: {
-      type: DataTypes.ENUM('issuance', 'transfer', 'burn'),
+      type: DigiAssetDataTypes,
       allowNull: false
     }
   },
