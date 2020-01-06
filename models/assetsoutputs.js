@@ -25,7 +25,7 @@ module.exports = function (sequelize, DataTypes) {
       allowNull: false
     },
     type: {
-      type: DigiAssetDataTypes.ASSET_TXN_TYPE
+      type: DataTypes.ENUM('issuance', 'transfer', 'burn')
     }
   },
   {
